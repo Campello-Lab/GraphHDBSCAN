@@ -210,6 +210,7 @@ class CoreSGHDBSCAN:
     metric: str = "euclidean"
     eps: float = 1e-12
     min_cluster_size: Optional[int] = None
+    save_models: bool = False
 
     # Filled by fit()
     X_: Optional[np.ndarray] = field(init=False, default=None)
@@ -232,7 +233,9 @@ class CoreSGHDBSCAN:
 
     # Final HDBSCAN-like models per m
     models_: Dict[int, CoreSGModel] = field(init=False, default_factory=dict)
-    times_: Dict[int, float] = field(init=False, default_factory=dict)      # total per-m time
+    condensed_trees_: Dict[int, object] = field(init=False, default_factory=dict)
+    labels_by_m_: Dict[int, np.ndarray] = field(init=False, default_factory=dict)
+    times_: Dict[int, float] = field(init=False, default_factory=dict)
 
     # --------------------------------------------------------
     # FIT: build D, self-inclusive cores, CORE-SG graph, CSR neighbor table
@@ -446,7 +449,14 @@ class CoreSGHDBSCAN:
 
 
     def model(self, min_samples):
+        if not self.save_models:
+            raise ValueError(
+                "Models were not saved. Initialize with save_models=True to access models_[min_samples]."
+            )
+        if min_samples not in self.models_:
+            raise KeyError(f"min_samples={min_samples} not found in saved models.")
         return self.models_[min_samples]
+        
     # --------------------------------------------------------
     # RUN: per-m MST on CORE-SG graph + generic pipeline
     # --------------------------------------------------------
@@ -463,6 +473,8 @@ class CoreSGHDBSCAN:
         self.msts_.clear()
         self.mst_times_.clear()
         self.times_.clear()
+        self.condensed_trees_.clear()
+        self.labels_by_m_.clear()
 
         N = self.N_
         D = self.D_
@@ -520,7 +532,13 @@ class CoreSGHDBSCAN:
                 condensed_tree_array=condensed_tree_array,
                 single_linkage_tree=single_linkage_tree,
             )
-            self.models_[int(m)] = model
+            
+            self.labels_by_m_[int(m)] = labels
+            self.condensed_trees_[int(m)] = model.condensed_tree_
+            
+            if self.save_models:
+                self.models_[int(m)] = model
+            
             self.times_[int(m)] = mst_time + (t2 - t1)
 
             print(f"[CORE-SG] m={m:2d}: MST+tree+labels in {self.times_[int(m)]:.4f}s")
@@ -529,16 +547,23 @@ class CoreSGHDBSCAN:
 
 
     # convenience plotting for one m
+
     def plot_condensed_tree(self, m: int, figsize=(8, 5)):
         import matplotlib.pyplot as plt
-        if m not in self.models_:
-            raise KeyError(f"m={m} not in CORE-SG models.")
-        model = self.models_[m]
-        if model.condensed_tree_ is None:
+    
+        if m in self.condensed_trees_:
+            ct = self.condensed_trees_[m]
+        elif m in self.models_:
+            ct = self.models_[m].condensed_tree_
+        else:
+            raise KeyError(f"m={m} not found in CORE-SG results.")
+    
+        if ct is None:
             print(f"No condensed tree for CORE-SG m={m}")
             return
+    
         plt.figure(figsize=figsize)
-        model.condensed_tree_.plot(select_clusters=True, label_clusters=True)
+        ct.plot(select_clusters=True, label_clusters=True)
         plt.title(f"CORE-SG Condensed Tree (min_samples = {m})")
         plt.show()
 
