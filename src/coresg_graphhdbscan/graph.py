@@ -695,27 +695,54 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
         return labels
 
 
-    def plot_condensed_tree(self, m=None, ax=None, figsize=(10, 6), **kwargs):
+    def plot_condensed_tree(self, m, figsize=(10, 6), **kwargs):
         """
         Plot the condensed tree for a selected ``min_samples`` value.
     
         Parameters
         ----------
         m : int
-            Selected ``min_samples`` value.
+            The ``min_samples`` value whose condensed tree should be displayed.
+        figsize : tuple of float, optional
+            Figure size passed to Matplotlib, by default ``(8, 5)``.
+        **kwargs
+            Additional keyword arguments forwarded to
+            ``CondensedTree.plot()``.
     
         Returns
         -------
         None
+            Displays the condensed tree plot.
+    
+        Raises
+        ------
+        ValueError
+            If the model has not been fitted yet.
+        KeyError
+            If the requested ``m`` is not available in the stored results.
+    
+        Notes
+        -----
+        This method first looks for the condensed tree in
+        ``self.coresg_.condensed_trees_``. If it is not found there, it falls
+        back to ``self.coresg_.models_[m].condensed_tree_`` when full models
+        have been saved.
+    
+        Examples
+        --------
+        >>> g.fit(X)
+        >>> g.plot_condensed_tree(10)
         """
-        if self.coresg_ is None:
-            raise ValueError("Model is not fitted yet.")
+        import matplotlib.pyplot as plt
+    
+        if not hasattr(self, "coresg_") or self.coresg_ is None:
+            raise ValueError("Model is not fitted yet. Call fit(...) first.")
     
         m = int(m)
     
-        if m in self.coresg_.condensed_trees_:
+        if m in getattr(self.coresg_, "condensed_trees_", {}):
             ct = self.coresg_.condensed_trees_[m]
-        elif m in self.coresg_.models_:
+        elif m in getattr(self.coresg_, "models_", {}):
             ct = self.coresg_.models_[m].condensed_tree_
         else:
             raise KeyError(f"m={m} not found in CORE-SG results.")
@@ -724,28 +751,50 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
             print(f"No condensed tree for CORE-SG m={m}")
             return
     
-        if ax is None:
-            plt.figure(figsize=figsize)
-            ax = plt.gca()
-    
-        ct.plot(select_clusters=True, label_clusters=True, ax=ax, **kwargs)
-        ax.set_title(f"CORE-SG Condensed Tree (min_samples = {m})")
+        plt.figure(figsize=figsize)
+        ct.plot(select_clusters=True, label_clusters=True, **kwargs)
+        plt.title(f"CORE-SG Condensed Tree (min_samples = {m})")
+        plt.show()
 
-    def interactive_condensed_tree(self, X=None, figsize=(10, 6)):
+
+    def interactive_condensed_tree(self, figsize=(10, 6)):
         """
-        Create an interactive condensed tree explorer across fitted ``min_samples`` values.
+        Create an interactive condensed tree explorer across fitted
+        ``min_samples`` values.
+    
+        Parameters
+        ----------
+        figsize : tuple of float, optional
+            Figure size passed to Matplotlib for each displayed condensed
+            tree, by default ``(10, 6)``.
     
         Returns
         -------
         ipywidgets.Widget
-            Interactive widget that lets users switch between fitted
-            ``min_samples`` values and inspect the corresponding condensed tree.
+            A selection slider widget for browsing condensed trees across
+            available ``min_samples`` values.
+    
+        Raises
+        ------
+        ImportError
+            If ``ipywidgets`` is not installed.
+        RuntimeError
+            If the model has not been fitted yet.
+        ValueError
+            If no condensed trees are available.
     
         Notes
         -----
-        This feature is most useful in a live Jupyter environment.
-        """
+        This method is intended for use in an interactive Jupyter
+        environment. It uses the stored condensed trees in
+        ``self.coresg_.condensed_trees_`` and falls back to any available
+        entries in ``self.coresg_.models_``.
     
+        Examples
+        --------
+        >>> g.fit(X)
+        >>> widget = g.interactive_condensed_tree()
+        """
         try:
             import ipywidgets as widgets
             from IPython.display import display, clear_output
@@ -755,13 +804,16 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
                 "Install it with `pip install ipywidgets`."
             ) from e
     
-        if not hasattr(self, "coresg_"):
+        import matplotlib.pyplot as plt
+    
+        if not hasattr(self, "coresg_") or self.coresg_ is None:
             raise RuntimeError("Call fit(...) before interactive_condensed_tree().")
     
         m_list = sorted(
             set(getattr(self.coresg_, "condensed_trees_", {}).keys()) |
             set(getattr(self.coresg_, "models_", {}).keys())
         )
+    
         if len(m_list) == 0:
             raise ValueError("No condensed trees are available.")
     
@@ -770,7 +822,7 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
         slider = widgets.SelectionSlider(
             options=m_list,
             value=m_list[0],
-            description="m",
+            description="min_samples",
             continuous_update=False,
             style={"description_width": "initial"},
             layout=widgets.Layout(width="500px"),
@@ -779,9 +831,7 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
         def redraw(m):
             with output:
                 clear_output(wait=True)
-                fig, ax = plt.subplots(figsize=figsize)
-                self.plot_condensed_tree(m=int(m), ax=ax)
-                plt.show()
+                self.plot_condensed_tree(m=int(m), figsize=figsize)
     
         def on_change(change):
             if change["name"] == "value":
