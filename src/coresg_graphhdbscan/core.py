@@ -232,10 +232,10 @@ class CoreSGHDBSCAN:
     mst_times_: Dict[int, float] = field(init=False, default_factory=dict)
 
     # Final HDBSCAN-like models per m
-    models_: Dict[int, CoreSGModel] = field(init=False, default_factory=dict)
-    condensed_trees_: Dict[int, object] = field(init=False, default_factory=dict)
-    labels_by_m_: Dict[int, np.ndarray] = field(init=False, default_factory=dict)
-    times_: Dict[int, float] = field(init=False, default_factory=dict)
+    models_: Dict[int, CoreSGModel] = field(init=False, default_factory=dict, repr=False)
+    condensed_trees_: Dict[int, object] = field(init=False, default_factory=dict, repr=False)
+    labels_by_m_: Dict[int, np.ndarray] = field(init=False, default_factory=dict, repr=False)
+    times_: Dict[int, float] = field(init=False, default_factory=dict, repr=False)
 
     # --------------------------------------------------------
     # FIT: build D, self-inclusive cores, CORE-SG graph, CSR neighbor table
