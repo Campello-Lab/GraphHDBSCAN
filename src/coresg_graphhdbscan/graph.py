@@ -708,32 +708,28 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
         -------
         None
         """
-        if not hasattr(self, "coresg_"):
-            raise RuntimeError("Call fit(...) first.")
-
-        if m is None:
-            m = getattr(self, "min_samples", None)
-        if m is None:
-            raise ValueError("No m was provided and self.min_samples is not set.")
-
+        if self.coresg_ is None:
+            raise ValueError("Model is not fitted yet.")
+    
         m = int(m)
-        core_model = self.coresg_.models_[m]
-
-        if not hasattr(core_model, "condensed_tree_") or not hasattr(core_model.condensed_tree_, "plot"):
-            raise AttributeError(f"No condensed tree available for m={m}.")
-
-        if ax is None:
-            _, ax = plt.subplots(figsize=figsize)
+    
+        if m in self.coresg_.condensed_trees_:
+            ct = self.coresg_.condensed_trees_[m]
+        elif m in self.coresg_.models_:
+            ct = self.coresg_.models_[m].condensed_tree_
         else:
-            ax.clear()
-            plt.sca(ax)
-
-        # ``hdbscan`` CondensedTree.plot() often draws on the current axis and
-
-        plt.sca(ax)
-        core_model.condensed_tree_.plot(**kwargs)
-        ax.set_title(f"Condensed Tree for m = {m}")
-        return ax
+            raise KeyError(f"m={m} not found in CORE-SG results.")
+    
+        if ct is None or not hasattr(ct, "plot"):
+            print(f"No condensed tree for CORE-SG m={m}")
+            return
+    
+        if ax is None:
+            plt.figure(figsize=figsize)
+            ax = plt.gca()
+    
+        ct.plot(select_clusters=True, label_clusters=True, ax=ax, **kwargs)
+        ax.set_title(f"CORE-SG Condensed Tree (min_samples = {m})")
 
     def interactive_condensed_tree(self, X=None, figsize=(10, 6)):
         """
@@ -749,6 +745,7 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
         -----
         This feature is most useful in a live Jupyter environment.
         """
+    
         try:
             import ipywidgets as widgets
             from IPython.display import display, clear_output
@@ -757,16 +754,19 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
                 "ipywidgets is required for interactive plotting. "
                 "Install it with `pip install ipywidgets`."
             ) from e
-
+    
         if not hasattr(self, "coresg_"):
             raise RuntimeError("Call fit(...) before interactive_condensed_tree().")
-
-        if not hasattr(self, "m_list") or self.m_list is None or len(self.m_list) == 0:
-            raise ValueError("`self.m_list` must exist and must not be empty.")
-
-        m_list = list(self.m_list)
+    
+        m_list = sorted(
+            set(getattr(self.coresg_, "condensed_trees_", {}).keys()) |
+            set(getattr(self.coresg_, "models_", {}).keys())
+        )
+        if len(m_list) == 0:
+            raise ValueError("No condensed trees are available.")
+    
         output = widgets.Output()
-
+    
         slider = widgets.SelectionSlider(
             options=m_list,
             value=m_list[0],
@@ -775,20 +775,20 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
             style={"description_width": "initial"},
             layout=widgets.Layout(width="500px"),
         )
-
+    
         def redraw(m):
             with output:
                 clear_output(wait=True)
                 fig, ax = plt.subplots(figsize=figsize)
                 self.plot_condensed_tree(m=int(m), ax=ax)
                 plt.show()
-
+    
         def on_change(change):
             if change["name"] == "value":
                 redraw(change["new"])
-
+    
         slider.observe(on_change, names="value")
         display(widgets.VBox([slider, output]))
         redraw(m_list[0])
-
+    
         return slider
