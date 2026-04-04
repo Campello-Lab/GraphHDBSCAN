@@ -179,6 +179,33 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
         )
         self.min_cluster_size = resolved_min_cluster_size
 
+    def __repr__(self):
+        fitted = hasattr(self, "coresg_") and self.coresg_ is not None
+    
+        if fitted:
+            n_models = len(getattr(self.coresg_, "models_", {}))
+            n_trees = len(getattr(self.coresg_, "condensed_trees_", {}))
+            n_label_sets = len(getattr(self.coresg_, "labels_by_m_", {}))
+        else:
+            n_models = 0
+            n_trees = 0
+            n_label_sets = 0
+    
+        return (
+            f"GraphCoreSGHDBSCAN("
+            f"min_samples={list(self.m_list)}, "
+            f"sim_graph_method={self.sim_graph_method!r}, "
+            f"metric={self.metric!r}, "
+            f"n_neighbors={self.n_neighbors}, "
+            f"min_cluster_size={self.min_cluster_size}, "
+            f"save_models={self.save_models}, "
+            f"fitted={fitted}, "
+            f"n_models={n_models}, "
+            f"n_condensed_trees={n_trees}, "
+            f"n_label_sets={n_label_sets}"
+            f")"
+        )
+    
     def _min_cluster_size_for(self, m):
         m = int(m)
         return m if self.min_cluster_size is None else int(self.min_cluster_size)
