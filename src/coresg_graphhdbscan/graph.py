@@ -84,6 +84,10 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
         Minimum cluster size used in the clustering stage. If None, the package
         follows the selected ``min_samples`` value for each run.
 
+    save_models : bool, default=False
+        If True, save hdbscan models for different min_samples which can add some memory overhead.
+        If False, just save labels and condensed trees for each min_samples.
+
     **kwargs
         Additional keyword arguments passed to internal graph-construction
         helpers.
@@ -107,6 +111,17 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
 
     coresg_ : CoreSGHDBSCAN
         Internal fitted CoreSG-HDBSCAN object.
+
+    models_ : dict
+        Dictionary of saved per-``min_samples`` models. Populated only when
+        ``save_models=True``.
+        
+    condensed_trees_ : dict
+        Dictionary of condensed tree objects keyed by fitted
+        ``min_samples`` value.
+        
+    labels_by_m_ : dict
+        Dictionary of stored labels keyed by fitted ``min_samples`` value.
     """
     def __init__(self,
                  min_samples=10,
@@ -711,11 +726,21 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
         ----------
         m : int
             Selected ``min_samples`` value.
+        no_noise : bool or None, optional
+            If ``True``, apply MST-based noise reassignment. If ``None``, use
+            the instance-level ``no_noise`` setting.
+        c : int, optional
+            Tie-breaking path length used during noise reassignment.
     
         Returns
         -------
         numpy.ndarray
             Cluster labels for the requested fitted solution.
+
+        Notes
+        -----
+        ``labels_by_m_[m]`` stores the directly fitted labels.
+        ``labels_for(m)`` may additionally apply noise reassignment.
         """
         labels = self.coresg_.labels_by_m_[m]
 
@@ -778,7 +803,7 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
     
         if m in getattr(self.coresg_, "condensed_trees_", {}):
             ct = self.coresg_.condensed_trees_[m]
-        elif m in getattr(self.coresg_, "models_", {}):
+        elif m in getattr(self.coresg_, "s_", {}):
             ct = self.coresg_.models_[m].condensed_tree_
         else:
             raise KeyError(f"m={m} not found in CORE-SG results.")
