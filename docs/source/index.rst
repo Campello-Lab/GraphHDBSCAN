@@ -1,7 +1,10 @@
 GraphHDBSCAN* documentation
-===============================
+===========================
 
-Installable package version of the CoreSG + GraphHDBSCAN* package.
+GraphHDBSCAN* is a graph-based density clustering package implementing
+Core-SG HDBSCAN*-style clustering with multiple similarity-graph construction
+options, direct access to per-``min_samples`` results, graph-based noise
+reassignment, and support for precomputed graphs.
 
 .. toctree::
    :maxdepth: 2
@@ -9,9 +12,9 @@ Installable package version of the CoreSG + GraphHDBSCAN* package.
 
    overview
    installation
-   usage
    parameters
+   usage
+   api
    examples
    references
    third_party_notices
-   api
