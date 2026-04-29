@@ -175,6 +175,7 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
                  heuristic_connect=False,
                  min_cluster_size=None,
                  save_models=False,
+                 similarity_backend="auto",
                  **kwargs):
 
         # store graph params
@@ -190,7 +191,15 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
                 f"Unsupported metric '{metric}'. "
                 f"Use one of {sorted(valid_metrics)}."
             )
-
+            
+        valid_similarity_backends = {"auto", "default", "numba"}
+        if similarity_backend not in valid_similarity_backends:
+            raise ValueError(
+                "similarity_backend must be one of "
+                f"{sorted(valid_similarity_backends)}, got {similarity_backend!r}."
+            )
+        
+        self.similarity_backend = similarity_backend
         self.sim_graph_method = sim_graph_method
         self.metric = metric
         self.add_neighbor = add_neighbor
@@ -480,8 +489,27 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
                     metric='cosine',
                     include_self=False,
                 )
-
-            conn = self._fast_phenograph_jaccard_from_knn_graph(knn_dist)
+        
+            if self.similarity_backend == "numba":
+                conn = self._fast_phenograph_jaccard_from_knn_graph(knn_dist)
+        
+            elif self.similarity_backend == "default":
+                _, conn, _ = sce.tl.phenograph(
+                    knn_dist,
+                    directed=False,
+                    clustering_algo=None,
+                )
+        
+            else:  # similarity_backend == "auto"
+                if _HAS_NUMBA:
+                    conn = self._fast_phenograph_jaccard_from_knn_graph(knn_dist)
+                else:
+                    _, conn, _ = sce.tl.phenograph(
+                        knn_dist,
+                        directed=False,
+                        clustering_algo=None,
+                    )
+        
             return nx.from_scipy_sparse_array(conn.tocsr(), edge_attribute='weight')
 
         if self.sim_graph_method == 'sc_gauss':
