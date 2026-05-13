@@ -31,6 +31,11 @@ Campello, R. J., Moulavi, D., Zimek, A., and Sander, J. (2015).
 *Hierarchical density estimates for data clustering, visualization, and outlier detection*.
 *ACM Transactions on Knowledge Discovery from Data (TKDD)*, 10(1), 5.
 
+Neto, A. C. A., Naldi, M. C., Campello, R. J. G. B., and Sander, J. (2022).
+*Core-SG: efficient computation of multiple MSTs for density-based methods*.
+In *2022 IEEE 38th International Conference on Data Engineering (ICDE)*,
+951--964. IEEE.
+
 Software and ecosystem references
 ---------------------------------
 
@@ -94,6 +99,14 @@ BibTeX
      year={2015}
    }
 
+  @inproceedings{neto2022core,
+     title={Core-SG: efficient computation of multiple MSTS for density-based methods},
+     author={Neto, Antonio Cavalcante Araujo and Naldi, Murilo Coelho and Campello, Ricardo JGB and Sander, J{\"o}rg},
+     booktitle={2022 IEEE 38th International Conference on Data Engineering (ICDE)},
+     pages={951--964},
+     year={2022},
+     organization={IEEE}
+   }
    @article{mcinnes2017hdbscan,
      title={hdbscan: Hierarchical density based clustering},
      author={McInnes, Leland and Healy, John and Astels, Steve},

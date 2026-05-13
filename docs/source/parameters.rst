@@ -36,7 +36,7 @@ A good default starting point for many datasets is:
 
 A simple way to think about the main settings is:
 
-- use ``min_samples`` to control how conservative clustering should be
+- use ``min_samples`` to control the smoothness of the density estimates
 - use ``sim_graph_method`` to choose how the similarity graph is built
 - use ``metric`` to choose the geometry used during graph construction
 - use ``n_neighbors`` to control local graph density
@@ -78,7 +78,7 @@ At-a-glance reference
      - Practical meaning
    * - ``min_samples``
      - ``10``
-     - Main clustering hyperparameter. Controls how conservative the density requirement is.
+     - Controls the smoothness of the density estimates as a single level or within an entire range.
    * - ``sim_graph_method``
      - ``"sc_umap"``
      - Chooses how the similarity graph is built.
@@ -96,10 +96,10 @@ At-a-glance reference
      - Controls local graph density.
    * - ``heuristic_connect``
      - ``False``
-     - Chooses how disconnected graphs are made connected.
+     - Chooses how originally disconnected graphs are handled.
    * - ``min_cluster_size``
      - ``None``
-     - Minimum cluster size in the clustering stage.
+     - (Optional) Minimum cluster size in the clustering stage.
    * - ``save_models``
      - ``False``
      - Stores full saved models for each fitted ``min_samples`` value.
@@ -379,7 +379,7 @@ Practical recommendation:
 Default: ``False``
 
 The final graph used for clustering must be connected. This parameter
-controls how disconnected graphs are handled.
+controls how originally disconnected graphs are handled.
 
 ``heuristic_connect=False``
    Default behavior. If the graph has multiple connected components, the
