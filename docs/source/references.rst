@@ -82,7 +82,7 @@ BibTeX
 
    @inproceedings{campello2013density,
      title={Density-based clustering based on hierarchical density estimates},
-     author={Campello, Ricardo J. G. B. and Moulavi, Davoud and Sander, J{"o}rg},
+     author={Campello, Ricardo J. G. B. and Moulavi, Davoud and Sander, J{\"o}rg},
      booktitle={Pacific-Asia Conference on Knowledge Discovery and Data Mining},
      pages={160--172},
      year={2013},
@@ -91,7 +91,7 @@ BibTeX
 
    @article{campello2015hierarchical,
      title={Hierarchical density estimates for data clustering, visualization, and outlier detection},
-     author={Campello, Ricardo J. G. B. and Moulavi, Davoud and Zimek, Arthur and Sander, J{"o}rg},
+     author={Campello, Ricardo J. G. B. and Moulavi, Davoud and Zimek, Arthur and Sander, J{\"o}rg},
      journal={ACM Transactions on Knowledge Discovery from Data},
      volume={10},
      number={1},
@@ -101,7 +101,7 @@ BibTeX
 
   @inproceedings{neto2022core,
      title={Core-SG: efficient computation of multiple MSTS for density-based methods},
-     author={Neto, Antonio Cavalcante Araujo and Naldi, Murilo Coelho and Campello, Ricardo JGB and Sander, J{\"o}rg},
+     author={Neto, Antonio Cavalcante Araujo and Naldi, Murilo Coelho and Campello, Ricardo J. G. B. and Sander, J{\"o}rg},
      booktitle={2022 IEEE 38th International Conference on Data Engineering (ICDE)},
      pages={951--964},
      year={2022},
