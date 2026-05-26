@@ -104,8 +104,18 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
     sim_graph_method : {"sc_umap", "sc_gauss", "jaccard_phenograph", "precomputed"}, default="sc_umap"
         Graph-construction backend.
 
-    metric : {"euclidean", "cosine", "hybrid_euclidean_cosine"}, default="euclidean"
-        Metric strategy used during graph construction.
+    metric : str, callable, or None, default="euclidean"
+        Distance metric used during similarity graph construction.
+        Supported string metrics are "cityblock", "cosine", "euclidean",
+        "l1", "l2", "manhattan", "braycurtis", "canberra",
+        "chebyshev", "correlation", "dice", "hamming", "jaccard",
+        "kulsinski", "mahalanobis", "minkowski", "rogerstanimoto",
+        "russellrao", "seuclidean", "sokalmichener", "sokalsneath",
+        "sqeuclidean", "yule", and the package-specific
+        "hybrid_euclidean_cosine".
+    
+    metric_kwds : dict or None, default=None
+        Additional keyword arguments passed to the selected distance metric.
 
     add_neighbor : bool, default=True
         Controls how weighted structural similarity is expanded into graph edges.
@@ -166,18 +176,21 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
     labels_by_m_ : dict
         Dictionary of stored labels keyed by fitted ``min_samples`` value.
     """
-    def __init__(self,
-                 min_samples=10,
-                 sim_graph_method='sc_umap',
-                 metric='euclidean',
-                 add_neighbor=True,
-                 no_noise=True,
-                 n_neighbors=15,
-                 heuristic_connect=False,
-                 min_cluster_size=None,
-                 save_models=False,
-                 similarity_backend="auto",
-                 **kwargs):
+    def __init__(
+                self,
+                min_samples=10,
+                sim_graph_method='sc_umap',
+                metric='euclidean',
+                metric_kwds=None,
+                add_neighbor=True,
+                no_noise=True,
+                n_neighbors=15,
+                heuristic_connect=False,
+                min_cluster_size=None,
+                save_models=False,
+                similarity_backend="auto",
+                **kwargs,
+            ):
 
         # store graph params
         valid_graph_methods = {'sc_gauss', 'sc_umap', 'jaccard_phenograph', 'precomputed'}
@@ -186,11 +199,45 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
                 f"Unsupported sim_graph_method '{sim_graph_method}'. "
                 f"Use one of {sorted(valid_graph_methods)}."
             )
-        valid_metrics = {'euclidean', 'cosine', 'hybrid_euclidean_cosine'}
-        if metric not in valid_metrics:
+        if metric is None:
+            metric = 'euclidean'
+        
+        valid_metrics = {
+            'cityblock',
+            'cosine',
+            'euclidean',
+            'l1',
+            'l2',
+            'manhattan',
+            'braycurtis',
+            'canberra',
+            'chebyshev',
+            'correlation',
+            'dice',
+            'hamming',
+            'jaccard',
+            'kulsinski',
+            'mahalanobis',
+            'minkowski',
+            'rogerstanimoto',
+            'russellrao',
+            'seuclidean',
+            'sokalmichener',
+            'sokalsneath',
+            'sqeuclidean',
+            'yule',
+            'hybrid_euclidean_cosine',
+        }
+        
+        if not isinstance(metric, str) and not callable(metric):
+            raise TypeError(
+                "metric must be a string metric name, a callable distance function, or None."
+            )
+        
+        if isinstance(metric, str) and metric not in valid_metrics:
             raise ValueError(
                 f"Unsupported metric '{metric}'. "
-                f"Use one of {sorted(valid_metrics)}."
+                f"Use one of {sorted(valid_metrics)}, or pass a callable metric."
             )
             
         valid_similarity_backends = {"auto", "default", "numba"}
@@ -203,6 +250,7 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
         self.similarity_backend = similarity_backend
         self.sim_graph_method = sim_graph_method
         self.metric = metric
+        self.metric_kwds = {} if metric_kwds is None else dict(metric_kwds)
         self.add_neighbor = add_neighbor
         self.no_noise = no_noise
         self.n_neighbors = n_neighbors
@@ -236,7 +284,7 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
 
         resolved_min_cluster_size = None if min_cluster_size is None else int(min_cluster_size)
 
-        core_metric = 'euclidean' if metric == 'hybrid_euclidean_cosine' else metric
+        core_metric = 'euclidean' if (metric == 'hybrid_euclidean_cosine' or callable(metric)) else metric
         super().__init__(
             min_samples_list=self.m_list,
             metric=core_metric,
@@ -472,7 +520,11 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
             knn_metric = 'cosine'
             use_precomputed_knn = False
         else:
-            distances_full = pairwise_distances(X, metric=self.metric)
+            distances_full = pairwise_distances(
+                X,
+                metric=self.metric,
+                **self.metric_kwds,
+            )
             knn_metric = 'precomputed'
             use_precomputed_knn = True
 
