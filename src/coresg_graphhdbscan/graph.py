@@ -113,6 +113,9 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
         "russellrao", "seuclidean", "sokalmichener", "sokalsneath",
         "sqeuclidean", "yule", and the package-specific
         "hybrid_euclidean_cosine".
+        The metric "kulsinski" is not supported. The combination
+        metric="yule" with sim_graph_method="sc_gauss" is also not
+        supported because it can produce non-finite graph weights.
     
     metric_kwds : dict or None, default=None
         Additional keyword arguments passed to the selected distance metric.
