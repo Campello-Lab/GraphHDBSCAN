@@ -16,6 +16,9 @@ For most users, the most important decisions are:
 - ``save_models``
 - ``similarity_backend``
 
+Advanced users may also use ``metric_kwds`` when the selected distance
+metric requires additional arguments.
+
 Start here
 ----------
 
@@ -56,6 +59,7 @@ The public constructor is:
        min_samples=10,
        sim_graph_method="sc_umap",
        metric="euclidean",
+       metric_kwds=None,
        add_neighbor=True,
        no_noise=True,
        n_neighbors=15,
@@ -84,7 +88,10 @@ At-a-glance reference
      - Chooses how the similarity graph is built.
    * - ``metric``
      - ``"euclidean"``
-     - Chooses the geometry used during graph construction.
+     - Chooses the distance metric used during similarity graph construction.
+   * - ``metric_kwds``
+     - ``None``
+     - Optional keyword arguments passed to the selected distance metric.
    * - ``add_neighbor``
      - ``True``
      - Controls how weighted structural similarity is expanded into graph edges.
@@ -288,45 +295,146 @@ To force the original PhenoGraph-based backend:
 
 Default: ``"euclidean"``
 
-This controls the metric strategy used during graph construction.
+This controls the distance metric used during similarity graph
+construction.
 
-Supported values are:
+Supported distance metrics are:
 
-- ``"euclidean"``
+- ``"cityblock"``
 - ``"cosine"``
+- ``"euclidean"``
+- ``"l1"``
+- ``"l2"``
+- ``"manhattan"``
+- ``"braycurtis"``
+- ``"canberra"``
+- ``"chebyshev"``
+- ``"correlation"``
+- ``"dice"``
+- ``"hamming"``
+- ``"jaccard"``
+- ``"mahalanobis"``
+- ``"minkowski"``
+- ``"rogerstanimoto"``
+- ``"russellrao"``
+- ``"seuclidean"``
+- ``"sokalmichener"``
+- ``"sokalsneath"``
+- ``"sqeuclidean"``
+- ``"yule"``
 - ``"hybrid_euclidean_cosine"``
 
 Choosing a metric:
 
 ``euclidean``
-   Euclidean distances are used to compute ``distances_full`` and graph
-   construction then uses precomputed neighbors from that matrix.
+    Default choice for standard continuous feature spaces.
 
 ``cosine``
-   Cosine distances are used to compute ``distances_full`` and graph
-   construction then uses precomputed neighbors from that matrix.
+    Useful when angular similarity is more meaningful than raw magnitude.
+
+``correlation``
+    Useful when similarity should depend on the shape or pattern of the
+    feature vector rather than absolute scale.
+
+``manhattan`` or ``l1``
+    Useful when L1 geometry is preferred.
+
+``jaccard`` and other binary metrics
+    Useful for binary or boolean feature representations.
+
+``minkowski``
+    Supports custom ``p`` values through ``metric_kwds``.
+
+``mahalanobis``
+    Requires an inverse covariance matrix ``VI`` through ``metric_kwds``.
+
+``seuclidean``
+    Requires a variance vector ``V`` through ``metric_kwds``.
 
 ``hybrid_euclidean_cosine``
-   Euclidean distances are used to compute ``distances_full``, while the
-   graph-construction stage applies a cosine-based second step on that
-   Euclidean distance representation.
+    Package-specific mode. Full pairwise distances remain Euclidean, but
+    neighborhood graph construction uses cosine geometry.
 
 Practical recommendation:
 
-- use ``"euclidean"`` for standard geometric tabular data
-- use ``"cosine"`` when direction matters more than magnitude
-- use ``"hybrid_euclidean_cosine"`` when you want Euclidean global distances
-  together with a cosine-based second-stage graph construction
+- use ``"euclidean"`` as a default starting point
+- use ``"cosine"`` or ``"correlation"`` when direction or pattern matters more than magnitude
+- use ``"minkowski"``, ``"mahalanobis"``, or ``"seuclidean"`` only when their assumptions match your data
+- use ``"hybrid_euclidean_cosine"`` when you want Euclidean full distances but cosine-based local neighborhoods
+
+The metric ``"kulsinski"`` is not supported because it is not available
+in current versions of ``scikit-learn``'s ``pairwise_distances``.
+
+The combination ``metric="yule"`` with ``sim_graph_method="sc_gauss"``
+is intentionally not supported because it can produce non-finite graph
+weights. Use ``metric="yule"`` with ``sim_graph_method="sc_umap"`` or
+``sim_graph_method="jaccard_phenograph"`` instead.
+
+Examples:
+
+.. code-block:: python
+
+   model = GraphCoreSGHDBSCAN(
+       min_samples=10,
+       sim_graph_method="sc_umap",
+       metric="correlation",
+       n_neighbors=15,
+   )
+
+.. code-block:: python
+
+   model = GraphCoreSGHDBSCAN(
+       min_samples=10,
+       sim_graph_method="sc_umap",
+       metric="minkowski",
+       metric_kwds={"p": 1.5},
+       n_neighbors=15,
+   )
+
+.. code-block:: python
+
+   import numpy as np
+
+   VI = np.linalg.pinv(np.cov(X, rowvar=False))
+
+   model = GraphCoreSGHDBSCAN(
+       min_samples=10,
+       sim_graph_method="sc_umap",
+       metric="mahalanobis",
+       metric_kwds={"VI": VI},
+       n_neighbors=15,
+   )
+
+``metric_kwds``
+^^^^^^^^^^^^^^^
+
+Default: ``None``
+
+This optional dictionary is passed to the selected distance metric during
+similarity graph construction.
+
+It is mainly needed for metrics that require additional parameters.
+
+Examples:
+
+- use ``metric_kwds={"p": 1.5}`` with ``metric="minkowski"``
+- use ``metric_kwds={"VI": VI}`` with ``metric="mahalanobis"``
+- use ``metric_kwds={"V": V}`` with ``metric="seuclidean"``
 
 Example:
 
 .. code-block:: python
 
+   import numpy as np
+
+   V = np.var(X, axis=0, ddof=1)
+
    model = GraphCoreSGHDBSCAN(
-       min_samples=range(2, 10),
+       min_samples=10,
        sim_graph_method="sc_umap",
-       metric="cosine",
-       n_neighbors=16,
+       metric="seuclidean",
+       metric_kwds={"V": V},
+       n_neighbors=15,
    )
 
 ``n_neighbors``
@@ -579,6 +687,36 @@ Cosine-based graph construction
    )
    model.fit(X)
    labels_10 = model.labels_for(10)
+
+Correlation-based graph construction
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+   model = GraphCoreSGHDBSCAN(
+       min_samples=[5, 10],
+       sim_graph_method="sc_umap",
+       metric="correlation",
+       n_neighbors=20,
+   )
+
+   model.fit(X)
+   labels_10 = model.labels_for(10)
+
+Minkowski distance with custom p
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+   model = GraphCoreSGHDBSCAN(
+       min_samples=10,
+       sim_graph_method="sc_umap",
+       metric="minkowski",
+       metric_kwds={"p": 1.5},
+       n_neighbors=15,
+   )
+
+   model.fit(X)
 
 Hybrid Euclidean-cosine mode
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
