@@ -109,7 +109,7 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
         Supported string metrics are "cityblock", "cosine", "euclidean",
         "l1", "l2", "manhattan", "braycurtis", "canberra",
         "chebyshev", "correlation", "dice", "hamming", "jaccard",
-        "kulsinski", "mahalanobis", "minkowski", "rogerstanimoto",
+        "mahalanobis", "minkowski", "rogerstanimoto",
         "russellrao", "seuclidean", "sokalmichener", "sokalsneath",
         "sqeuclidean", "yule", and the package-specific
         "hybrid_euclidean_cosine".
@@ -216,7 +216,6 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
             'dice',
             'hamming',
             'jaccard',
-            'kulsinski',
             'mahalanobis',
             'minkowski',
             'rogerstanimoto',
