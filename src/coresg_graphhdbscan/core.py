@@ -818,7 +818,7 @@ class CoreSGHDBSCAN:
     
     
     # convenience plotting for one m
-    def plot_condensed_tree(self, m: int, figsize=(8, 5)):
+    def plot_condensed_tree(self, m: int, figsize=(8, 5), lambda_floor=1.0, **kwargs):
         import matplotlib.pyplot as plt
         if m not in self.models_:
             raise KeyError(f"m={m} not in CORE-SG models.")
@@ -827,9 +827,15 @@ class CoreSGHDBSCAN:
             print(f"No condensed tree for CORE-SG m={m}")
             return
         plt.figure(figsize=figsize)
-        model.condensed_tree_.plot(select_clusters=True, label_clusters=True)
-        plt.title(f"CORE-SG Condensed Tree (min_samples = {m})")
+        ax = plot_condensed_tree_bounded(
+            model.condensed_tree_,
+            lambda_floor=lambda_floor,
+            select_clusters=True, label_clusters=True,
+            **kwargs,
+        )
+        ax.set_title(f"CORE-SG Condensed Tree (min_samples = {m})")
         plt.show()
+        return ax
 
 
     def plot_condensed_tree_ground_truth_pies(
@@ -868,6 +874,49 @@ class CoreSGHDBSCAN:
             figsize=figsize,
             **kwargs,
         )
+
+def plot_condensed_tree_bounded(
+    condensed_tree,
+    *,
+    lambda_floor=1.0,
+    dash_synthetic=True,
+    dash_style=(0, (5, 3)),
+    dash_color="0.35",
+    dash_linewidth=1.3,
+    axis=None,
+    figsize=(8, 5),
+    **plot_kwargs,
+):
+    """Plot an hdbscan CondensedTree for a bounded similarity graph (eps in [0, 1]).
+
+    Starts the lambda axis at ``lambda_floor`` (= 1/max_eps) instead of hdbscan's
+    hardcoded 0, and draws the synthetic weight-1 joins of a disconnected graph
+    (splits at exactly the floor) as dashed connectors.
+    """
+    import matplotlib.pyplot as plt
+
+    if axis is None:
+        _, axis = plt.subplots(figsize=figsize)
+
+    lam = np.asarray(condensed_tree._raw_tree["lambda_val"], float)
+    finite = lam[np.isfinite(lam)]
+    min_lambda = float(finite.min()) if finite.size else 0.0
+    floor = min(float(lambda_floor), min_lambda)  # never crop real structure
+
+    axis = condensed_tree.plot(axis=axis, **plot_kwargs)
+
+    if dash_synthetic:
+        for line in axis.get_lines():
+            yd = np.asarray(line.get_ydata(), float)
+            if yd.size == 2 and np.all(np.isclose(yd, floor, atol=1e-9)):
+                line.set_linestyle(dash_style)
+                line.set_color(dash_color)
+                line.set_linewidth(dash_linewidth)
+
+    bottom, _top = axis.get_ylim()   # inverted axis: 2nd entry is the top
+    axis.set_ylim(bottom, floor)
+    return axis
+
 
 # ===========================================
 # Helper: plot condensed tree for any model dict
