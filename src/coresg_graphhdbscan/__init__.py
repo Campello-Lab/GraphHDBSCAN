@@ -19,6 +19,10 @@ CoreSGModel
 
 from .core import CoreSGHDBSCAN, CoreSGModel
 from .graph import GraphCoreSGHDBSCAN
+from .ground_truth_pies import (
+    plot_condensed_tree_ground_truth_pies,
+    resolve_condensed_tree,
+)
 
 __all__ = [
     "GraphCoreSGHDBSCAN",
