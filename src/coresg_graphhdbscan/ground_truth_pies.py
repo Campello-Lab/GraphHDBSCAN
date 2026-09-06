@@ -421,13 +421,18 @@ def plot_condensed_tree_ground_truth_pies(
         title += f" (min_samples = {int(m)})"
     ax.set_title(title)
 
-    # Add room so pies at the root and leaf nodes are not clipped.
+    # Start the lambda axis at 1 (= 1/max_eps) and dash the synthetic
+    # weight-1 joins that appear when the graph is disconnected.
+    floor = 1.0
+    for line in ax.get_lines():
+        yd = np.asarray(line.get_ydata(), float)
+        if yd.size == 2 and np.all(np.isclose(yd, floor, atol=1e-9)):
+            line.set_linestyle((0, (5, 3)))
+            line.set_color("0.35")
+            line.set_linewidth(1.3)
+
     lower, upper = ax.get_ylim()
     span = abs(lower - upper) or 1.0
-
-    if lower > upper:  # inverted lambda axis
-        ax.set_ylim(lower + 0.04 * span, upper - 0.04 * span)
-    else:
-        ax.set_ylim(lower - 0.04 * span, upper + 0.04 * span)
+    ax.set_ylim(lower + 0.04 * span, floor)  # inverted axis: top = floor
 
     return fig, ax
