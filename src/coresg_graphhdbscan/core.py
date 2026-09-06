@@ -925,17 +925,12 @@ def plot_condensed_tree_for_m(models_dict, m: int, title_prefix: str = "", figsi
     import matplotlib.pyplot as plt
     if m not in models_dict:
         raise KeyError(f"m={m} not found in models_dict")
-
-    model = models_dict[m]
-    ct = model.condensed_tree_
+    ct = models_dict[m].condensed_tree_
     if ct is None:
         print(f"No condensed tree available for m={m}")
         return
-
     plt.figure(figsize=figsize)
-    ct.plot(select_clusters=True, label_clusters=True)
-    if title_prefix:
-        plt.title(f"{title_prefix} Condensed Tree (min_samples = {m})")
-    else:
-        plt.title(f"Condensed Tree (min_samples = {m})")
+    ax = plot_condensed_tree_bounded(ct, select_clusters=True, label_clusters=True)
+    ax.set_title(f"{title_prefix + ' ' if title_prefix else ''}Condensed Tree (min_samples = {m})")
     plt.show()
+    return ax
