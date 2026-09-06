@@ -1236,9 +1236,10 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
 
         return labels
 
-    def plot_condensed_tree(self, m, figsize=(10, 6), **kwargs):
+    def plot_condensed_tree(self, m, figsize=(10, 6), lambda_floor=1.0, **kwargs):
         """Plot the condensed tree for a selected ``min_samples`` value."""
         import matplotlib.pyplot as plt
+        from .core import plot_condensed_tree_bounded
 
         if not hasattr(self, "coresg_") or self.coresg_ is None:
             raise ValueError("Model is not fitted yet. Call fit(...) first.")
@@ -1257,9 +1258,15 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
             return
 
         plt.figure(figsize=figsize)
-        ct.plot(select_clusters=False, label_clusters=False, **kwargs)
-        plt.title(f"CORE-SG Condensed Tree (min_samples = {m})")
+        ax = plot_condensed_tree_bounded(
+            ct,
+            lambda_floor=lambda_floor,
+            select_clusters=False, label_clusters=False,
+            **kwargs,
+        )
+        ax.set_title(f"CORE-SG Condensed Tree (min_samples = {m})")
         plt.show()
+        return ax
 
 
 
