@@ -224,6 +224,15 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
                 f"Use one of {sorted(valid_metrics)}, or pass a callable metric."
             )
 
+        if sim_graph_method == "precomputed" and metric == "precomputed":
+            raise ValueError(
+                "Do not use metric='precomputed' together with "
+                "sim_graph_method='precomputed'. "
+                "metric='precomputed' means the input is a distance matrix; "
+                "sim_graph_method='precomputed' means the input is already "
+                "a similarity graph."
+            )
+              
         if sim_graph_method == 'sc_gauss' and metric == 'yule':
             raise ValueError(
                 "metric='yule' is not supported with sim_graph_method='sc_gauss' "
