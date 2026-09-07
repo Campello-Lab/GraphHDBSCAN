@@ -185,6 +185,7 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
             metric = 'euclidean'
 
         valid_metrics = {
+            'precomputed',
             'cityblock',
             'cosine',
             'euclidean',
@@ -694,22 +695,99 @@ class GraphCoreSGHDBSCAN(CoreSGHDBSCAN):
         sc, sce, sc_gauss, sc_umap, _get_indices_distances_from_dense_matrix = _get_scanpy_modules()
 
         X = data.toarray() if hasattr(data, "toarray") else np.asarray(data)
+        
         if X.ndim != 2:
             raise ValueError("Input data must be a 2D array-like object.")
-
-        second_order = _SECOND_ORDER_METRICS.get(self.metric)
-        if second_order is not None:
-            base_metric, knn_metric = second_order
+        
+        
+        # ---------------------------------------------------------
+        # NEW: support a precomputed DISTANCE MATRIX
+        # ---------------------------------------------------------
+        if self.metric == "precomputed":
+        
             if distances_full is None:
-                distances_full = pairwise_distances(X, metric=base_metric)
-                # A fresh base matrix invalidates the derived second-order one.
-                self._second_order_knn_ = None
-            use_precomputed_knn = False
-        else:
+        
+                distances_full = np.asarray(X, dtype=np.float64)
+        
+                # Must be square
+                if (
+                    distances_full.ndim != 2
+                    or distances_full.shape[0] != distances_full.shape[1]
+                ):
+                    raise ValueError(
+                        "With metric='precomputed', X must be a square "
+                        "distance matrix."
+                    )
+        
+                # Must contain finite values
+                if not np.all(np.isfinite(distances_full)):
+                    raise ValueError(
+                        "Precomputed distance matrix contains non-finite values."
+                    )
+        
+                # Distances cannot be negative
+                if np.any(distances_full < 0):
+                    raise ValueError(
+                        "Precomputed distance matrix cannot contain negative distances."
+                    )
+        
+                # Must be symmetric
+                if not np.allclose(
+                    distances_full,
+                    distances_full.T,
+                    rtol=1e-7,
+                    atol=1e-12,
+                ):
+                    raise ValueError(
+                        "Precomputed distance matrix must be symmetric."
+                    )
+        
+                # Work with our own copy
+                distances_full = distances_full.copy()
+        
+                # Remove tiny numerical errors on diagonal
+                np.fill_diagonal(distances_full, 0.0)
+        
             knn_metric = None
-            if distances_full is None:
-                distances_full = pairwise_distances(X, metric=self.metric, **self.metric_kwds)
+        
+            # The graph routines below should treat distances_full
+            # directly as distances.
             use_precomputed_knn = True
+        
+        
+        # ---------------------------------------------------------
+        # Normal feature matrices
+        # ---------------------------------------------------------
+        else:
+        
+            second_order = _SECOND_ORDER_METRICS.get(self.metric)
+        
+            if second_order is not None:
+        
+                base_metric, knn_metric = second_order
+        
+                if distances_full is None:
+                    distances_full = pairwise_distances(
+                        X,
+                        metric=base_metric,
+                    )
+        
+                    self._second_order_knn_ = None
+        
+                use_precomputed_knn = False
+        
+            else:
+        
+                knn_metric = None
+        
+                if distances_full is None:
+                    distances_full = pairwise_distances(
+                        X,
+                        metric=self.metric,
+                        **self.metric_kwds
+                    )
+        
+                use_precomputed_knn = True
 
         self.distances_full_ = distances_full
         n = distances_full.shape[0]
