@@ -85,7 +85,7 @@ When a precomputed similarity graph is provided, the package uses it to construc
 
 The associated paper is available on bioRxiv:
 
-[GraphHDBSCAN* paper](https://www.biorxiv.org/content/10.64898/2026.03.24.713924v1)
+[GraphHDBSCAN* paper](https://www.biorxiv.org/content/10.64898/2026.03.24.713924)
 
 To reproduce the results, first generate the input data by following the preprocessing instructions provided in the [Clustering-benchmarking-for-scRNAseq](https://github.com/Campello-Lab/Clustering-benchmarking-for-scRNAseq) repository.
 
