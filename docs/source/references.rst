@@ -14,7 +14,7 @@ method described in the following original paper:
 Ghoreishi, S. A., Szmigiel, A. S., Nagai, J., Costa, I. G., Zimek, A., and Campello, R. J. G. B. (2026)
 *GraphHDBSCAN\*: Graph-based Hierarchical Clustering on High Dimensional Single-cell RNA Sequencing Data*.
 *bioRxiv preprint*, 2026.
-Available at bioRxiv: ``10.64898/2026.03.24.713924v1``
+Available at bioRxiv: ``10.64898/2026.03.24.713924``
 
 This is the primary reference for the package and should be cited when the
 package itself or the GraphHDBSCAN* method is used.
